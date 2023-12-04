@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_maps/presentation/screens/otp_screen.dart';
 
 import '../../constants/colors.dart';
 
@@ -7,10 +8,11 @@ class LoginScreen extends StatelessWidget {
 
   LoginScreen({Key? key}) : super(key: key);
   late String phoneNumber;
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _phoneFormKey = GlobalKey<FormState>();
 
   Widget _buildIntroTexts() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'What is your phone number?',
@@ -97,11 +99,13 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNextButton() {
+  Widget _buildNextButton(BuildContext context) {
     return Align(
       alignment: Alignment.centerRight,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.of(context).pushNamedAndRemoveUntil(OtpScreen.routeName, (route) => false);
+        },
         style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,
             minimumSize: const Size(110, 50),
@@ -125,7 +129,7 @@ class LoginScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.white,
         body: Form(
-          key: _formKey,
+          key: _phoneFormKey,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 88),
             child: Column(
@@ -136,7 +140,7 @@ class LoginScreen extends StatelessWidget {
                   height: 110,
                 ),
                 _buildPhoneFormField(),
-                _buildNextButton(),
+                _buildNextButton(context),
               ],
             ),
           ),
