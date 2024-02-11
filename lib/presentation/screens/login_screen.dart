@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_maps/business_logic/cubit/phone_auth/phone_auth_cubit.dart';
 import 'package:flutter_maps/presentation/screens/otp_screen.dart';
 
 import '../../constants/colors.dart';
 
+// ignore: must_be_immutable
 class LoginScreen extends StatelessWidget {
-  static const routeName = '/'; /// '/login-screen';
+  static const routeName = '/login-screen';
 
   LoginScreen({Key? key}) : super(key: key);
+
+  final GlobalKey<FormState> _phoneFormKey = GlobalKey();
+
   late String phoneNumber;
-  final GlobalKey<FormState> _phoneFormKey = GlobalKey<FormState>();
 
   Widget _buildIntroTexts() {
     return Column(
@@ -17,12 +22,11 @@ class LoginScreen extends StatelessWidget {
         const Text(
           'What is your phone number?',
           style: TextStyle(
-            color: Colors.black,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+              color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 30),
+        const SizedBox(
+          height: 30,
+        ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 2),
           child: const Text(
@@ -32,16 +36,9 @@ class LoginScreen extends StatelessWidget {
               fontSize: 18,
             ),
           ),
-        )
+        ),
       ],
     );
-  }
-
-  String generateCountryFlag() {
-    String countryCode = 'eg';
-    String flag = countryCode.toUpperCase().replaceAllMapped(RegExp(r'[A-Z]'),
-        (match) => String.fromCharCode(match.group(0)!.codeUnitAt(0) + 127397));
-    return flag;
   }
 
   Widget _buildPhoneFormField() {
@@ -53,50 +50,71 @@ class LoginScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.lightGrey),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: const BorderRadius.all(Radius.circular(6)),
             ),
             child: Text(
               '${generateCountryFlag()} +20',
+              style: const TextStyle(fontSize: 18, letterSpacing: 2.0),
+            ),
+          ),
+        ),
+        const SizedBox(
+          width: 16,
+        ),
+        Expanded(
+          flex: 2,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.blue),
+              borderRadius: const BorderRadius.all(Radius.circular(6)),
+            ),
+            child: TextFormField(
+              autofocus: true,
               style: const TextStyle(
                 fontSize: 18,
                 letterSpacing: 2.0,
               ),
+              decoration: const InputDecoration(border: InputBorder.none),
+              cursorColor: Colors.black,
+              keyboardType: TextInputType.phone,
+              validator: (value) {
+                if (value!.isEmpty) {
+                  return 'Please enter yout phone number!';
+                } else if (value.length < 11) {
+                  return 'Too short for a phone number!';
+                }
+                return null;
+              },
+              onSaved: (value) {
+                phoneNumber = value!;
+              },
             ),
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 2,
-          child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.blue),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: TextFormField(
-                autofocus: true,
-                style: const TextStyle(fontSize: 18, letterSpacing: 2.0),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                ),
-                cursorColor: Colors.black,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please enter your phone number!';
-                  } else if (value.length < 11) {
-                    return 'Too short a phone number!';
-                  }
-                  return null;
-                },
-                onSaved: (value) {
-                  phoneNumber = value!;
-                },
-              )),
-        ),
       ],
     );
+  }
+
+  String generateCountryFlag() {
+    String countryCode = 'eg';
+
+    String flag = countryCode.toUpperCase().replaceAllMapped(RegExp(r'[A-Z]'),
+        (match) => String.fromCharCode(match.group(0)!.codeUnitAt(0) + 127397));
+
+    return flag;
+  }
+
+  Future<void> _register(BuildContext context) async {
+    if (!_phoneFormKey.currentState!.validate()) {
+      Navigator.pop(context);
+      return;
+    } else {
+      Navigator.pop(context);
+      _phoneFormKey.currentState!.save();
+      BlocProvider.of<PhoneAuthCubit>(context).submitPhoneNumber(phoneNumber);
+    }
   }
 
   Widget _buildNextButton(BuildContext context) {
@@ -104,22 +122,75 @@ class LoginScreen extends StatelessWidget {
       alignment: Alignment.centerRight,
       child: ElevatedButton(
         onPressed: () {
-          Navigator.of(context).pushNamedAndRemoveUntil(OtpScreen.routeName, (route) => false);
+          showProgressIndicator(context);
+
+          _register(context);
         },
         style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            minimumSize: const Size(110, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            )),
-        child: const Text(
-          'Next',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
+          minimumSize: const Size(110, 50),
+          primary: Colors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
           ),
         ),
+        child: const Text(
+          'Next',
+          style: TextStyle(color: Colors.white, fontSize: 16),
+        ),
       ),
+    );
+  }
+
+  void showProgressIndicator(BuildContext context) {
+    AlertDialog alertDialog = const AlertDialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      content: Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+        ),
+      ),
+    );
+
+    showDialog(
+      barrierColor: Colors.white.withOpacity(0),
+      barrierDismissible: false,
+      context: context,
+      builder: (context) {
+        return alertDialog;
+      },
+    );
+  }
+
+  Widget _buildPhoneNumberSubmittedBloc() {
+    return BlocListener<PhoneAuthCubit, PhoneAuthState>(
+      listenWhen: (previous, current) {
+        return previous != current;
+      },
+      listener: (context, state) {
+        if (state is Loading) {
+          showProgressIndicator(context);
+        }
+
+        if (state is PhoneNumberSubmitted) {
+          Navigator.pop(context);
+          Navigator.of(context)
+              .pushNamed(OtpScreen.routeName, arguments: phoneNumber);
+        }
+
+        if (state is ErrorOccurred) {
+          Navigator.pop(context);
+          String errorMsg = (state).errorMsg;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg),
+              backgroundColor: Colors.black,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: Container(),
     );
   }
 
@@ -132,16 +203,22 @@ class LoginScreen extends StatelessWidget {
           key: _phoneFormKey,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 88),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildIntroTexts(),
-                const SizedBox(
-                  height: 110,
-                ),
-                _buildPhoneFormField(),
-                _buildNextButton(context),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildIntroTexts(),
+                  const SizedBox(
+                    height: 110,
+                  ),
+                  _buildPhoneFormField(),
+                  const SizedBox(
+                    height: 70,
+                  ),
+                  _buildNextButton(context),
+                  _buildPhoneNumberSubmittedBloc(),
+                ],
+              ),
             ),
           ),
         ),

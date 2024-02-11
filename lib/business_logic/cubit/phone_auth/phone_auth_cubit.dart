@@ -10,8 +10,11 @@ class PhoneAuthCubit extends Cubit<PhoneAuthState> {
   PhoneAuthCubit() : super(PhoneAuthInitial());
 
   Future<void> submitPhoneNumber(String phoneNumber) async {
+    emit(Loading());
+
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: '+2$phoneNumber',
+      timeout: const Duration(seconds: 14),
       verificationCompleted: verificationCompleted,
       verificationFailed: verificationFailed,
       codeSent: codeSent,
@@ -41,9 +44,8 @@ class PhoneAuthCubit extends Cubit<PhoneAuthState> {
 
   Future<void> submitOTP(String otpCode) async {
     PhoneAuthCredential credential = PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: otpCode,
-    );
+        verificationId: this.verificationId, smsCode: otpCode);
+
     await signIn(credential);
   }
 
@@ -51,12 +53,12 @@ class PhoneAuthCubit extends Cubit<PhoneAuthState> {
     try {
       await FirebaseAuth.instance.signInWithCredential(credential);
       emit(PhoneOTPVerified());
-    } catch (e) {
-      emit(ErrorOccurred(errorMsg: e.toString()));
+    } catch (error) {
+      emit(ErrorOccurred(errorMsg: error.toString()));
     }
   }
 
-  Future logOut() async {
+  Future<void> logOut() async {
     await FirebaseAuth.instance.signOut();
   }
 

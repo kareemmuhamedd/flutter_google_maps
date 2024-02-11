@@ -25,10 +25,11 @@ class AppRouter {
         );
 
       case OtpScreen.routeName:
+        final phoneNumber = settings.arguments as String;
         return MaterialPageRoute(
           builder: (_) => BlocProvider<PhoneAuthCubit>.value(
             value: phoneAuthCubit!,
-            child: OtpScreen(phoneNumber: '123'),
+            child: OtpScreen(phoneNumber: phoneNumber),
           ),
         );
 

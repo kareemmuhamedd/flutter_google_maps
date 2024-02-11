@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_maps/presentation/screens/map_screen.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import '../../business_logic/cubit/phone_auth/phone_auth_cubit.dart';
 import '../../constants/colors.dart';
 
 class OtpScreen extends StatelessWidget {
   static const routeName = '/otp-screen';
-  final phoneNumber;
+  final String phoneNumber;
 
   OtpScreen({Key? key, required this.phoneNumber}) : super(key: key);
 
@@ -97,11 +100,18 @@ class OtpScreen extends StatelessWidget {
     );
   }
 
+  void _login(BuildContext context) {
+    BlocProvider.of<PhoneAuthCubit>(context).submitOTP(otpCode);
+  }
+
   Widget _buildVerifyButton(BuildContext context) {
     return Align(
       alignment: Alignment.centerRight,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          showProgressIndicator(context);
+          _login(context);
+        },
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(110, 50),
           primary: Colors.black,
@@ -114,6 +124,37 @@ class OtpScreen extends StatelessWidget {
           style: TextStyle(color: Colors.white, fontSize: 16),
         ),
       ),
+    );
+  }
+
+  Widget _buildPhoneVerificationBloc() {
+    return BlocListener<PhoneAuthCubit, PhoneAuthState>(
+      listenWhen: (previous, current) {
+        return previous != current;
+      },
+      listener: (context, state) {
+        if (state is Loading) {
+          showProgressIndicator(context);
+        }
+
+        if (state is PhoneOTPVerified) {
+          Navigator.pop(context);
+          Navigator.of(context).pushReplacementNamed(MapScreen.routeName);
+        }
+
+        if (state is ErrorOccurred) {
+          //Navigator.pop(context);
+          String errorMsg = (state).errorMsg;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMsg),
+              backgroundColor: Colors.black,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: Container(),
     );
   }
 
@@ -136,6 +177,7 @@ class OtpScreen extends StatelessWidget {
                   height: 60,
                 ),
                 _buildVerifyButton(context),
+                _buildPhoneVerificationBloc()
               ],
             ),
           ),
