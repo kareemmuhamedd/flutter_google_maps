@@ -45,6 +45,7 @@ dependencies:
   url_launcher: ^6.2.4
   font_awesome_flutter: ^10.7.0
   dio: ^5.4.0
+  uuid: ^4.3.3
 
 
 dev_dependencies:
