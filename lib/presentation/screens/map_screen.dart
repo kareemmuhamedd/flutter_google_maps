@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_maps/business_logic/cubit/phone_auth/phone_auth_cubit.dart';
 import 'package:flutter_maps/constants/colors.dart';
+import 'package:flutter_maps/data/models/place.dart';
+import 'package:flutter_maps/data/models/place_suggestion.dart';
 import 'package:flutter_maps/helpers/location_helper.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -18,12 +20,30 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  PhoneAuthCubit phoneAuthCubit = PhoneAuthCubit();
   final Completer<GoogleMapController> _mapController = Completer();
   Position? position;
   late CameraPosition _myCameraPositionCurrentLocation;
   bool loading = true;
   String errorMessage = '';
+
+  // this variables for getPlacesLocation
+  Set<Marker> markers = {};
+  late PlaceSuggestion placeSuggestion;
+  late Place selectedPlace;
+
+  late CameraPosition goToSearchedForPlace;
+
+  void buildCameraNewPosition() {
+    goToSearchedForPlace = CameraPosition(
+      bearing: 0.0,
+      tilt: 0.0,
+      target: LatLng(
+        selectedPlace.result.geometry.location.lat,
+        selectedPlace.result.geometry.location.lat,
+      ),
+      zoom: 13,
+    );
+  }
 
   @override
   void initState() {
@@ -55,7 +75,7 @@ class _MapScreenState extends State<MapScreen> {
     } else {
       setState(() {
         errorMessage =
-        'Failed to get location. Please enable location services and try again.';
+            'Failed to get location. Please enable location services and try again.';
       });
     }
 
@@ -78,6 +98,7 @@ class _MapScreenState extends State<MapScreen> {
       myLocationEnabled: true,
       zoomControlsEnabled: false,
       myLocationButtonEnabled: false,
+      markers: markers,
       onMapCreated: (GoogleMapController controller) {
         _mapController.complete(controller);
       },
@@ -100,6 +121,12 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  void onMarkerAdded(Marker marker) {
+    setState(() {
+      markers.add(marker);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -109,7 +136,11 @@ class _MapScreenState extends State<MapScreen> {
             onPressed: () {
               showSearch(
                 context: context,
-                delegate: CustomSearchDelegate(),
+                delegate: CustomSearchDelegate(
+                  mapController: _mapController,
+                  position: position!,
+                  onMarkerAdded: onMarkerAdded,
+                ),
               );
             },
             icon: const Icon(Icons.search),
@@ -118,18 +149,17 @@ class _MapScreenState extends State<MapScreen> {
       ),
       // drawer: MyDrawer(),
       body: Stack(
-
         children: [
           position != null
-             ? buildMap()
+              ? buildMap()
               // ? Container(color: Colors.green,)
               : loading
-              ? const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.blue,
-            ),
-          )
-              : buildErrorMessage(),
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.blue,
+                      ),
+                    )
+                  : buildErrorMessage(),
         ],
       ),
       floatingActionButton: FloatingActionButton(

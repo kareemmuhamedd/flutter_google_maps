@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter_maps/data/models/place.dart';
 import 'package:meta/meta.dart';
 
 import '../../../data/models/place_suggestion.dart';
@@ -16,6 +17,14 @@ class MapsCubit extends Cubit<MapsState> {
         .fetchSuggestions(place, sessionToken)
         .then((List<PlaceSuggestion> suggestions) {
       emit(PlacesLoaded(suggestions));
+    });
+  }
+
+  void emitPlaceLocation(String placeId, String sessionToken) {
+    mapsRepository
+        .getPlaceLocation(placeId, sessionToken)
+        .then((place) {
+      emit(PlaceLocationLoaded(place));
     });
   }
 }
